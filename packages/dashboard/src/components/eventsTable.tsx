@@ -24,7 +24,8 @@ import {
   GetEventsResponse,
   GetEventsResponseItem,
 } from "isomorphic-lib/src/types";
-import React, { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
 import { v4 as uuid } from "uuid";
 import { create } from "zustand";
@@ -150,6 +151,26 @@ export function EventsTable({
     [events],
   );
   const updateEvents = useEventsStore((store) => store.updateEvents);
+
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  const urlSearchparams = new URLSearchParams(searchParams.toString());
+
+  const updateQueryParam = (param: string, updatedValue: string) => {
+    urlSearchparams.set(param, updatedValue);
+    const queryString = urlSearchparams.toString();
+    const updatedPath = queryString ? `${pathname}?${queryString}` : pathname;
+    router.push(updatedPath);
+  };
+
+  useEffect(() => {
+    updateQueryParam("page", page.toString());
+  }, [page]);
+
+  useEffect(() => {
+    updateQueryParam("pageSize", pageSize.toString());
+  }, [pageSize]);
 
   const messages =
     messagesResult.type === CompletionStatus.Successful
@@ -318,6 +339,10 @@ export function EventsTable({
 
   const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
 
+  useEffect(() => {
+    updateQueryParam("searchTerm", searchTerm);
+  }, [searchTerm]);
+
   React.useEffect(() => {
     (async () => {
       if (!workspaceId) {
@@ -401,6 +426,10 @@ export function EventsTable({
   const closeSidebar = () => {
     setSidebarOpen(false);
   };
+
+  useEffect(() => {
+    updateQueryParam("selectedEvent", selectedEvent?.messageId ?? "");
+  }, [selectedEvent]);
 
   return (
     <>
